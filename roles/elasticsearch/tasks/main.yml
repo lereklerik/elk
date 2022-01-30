@@ -1,0 +1,6 @@
+---
+- name: Configure Elasticsearch
+  template:
+    src: elasticsearch.yml.j2
+    mode: 0644
+    dest: /etc/elasticsearch/elasticsearch.yml

@@ -1,0 +1,8 @@
+---
+- name: Update repositories cache and install "python" package
+  apt:
+    update_cache: yes
+- name: Install Java using Ansible
+  apt:
+    name: openjdk-8-jdk
+    state: present

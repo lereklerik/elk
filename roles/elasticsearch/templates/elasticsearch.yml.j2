@@ -1,0 +1,13 @@
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+cluster.initial_master_nodes=es-hot,es-warm
+bootstrap.memory_lock=true
+cluster.name=es-docker-cluster
+ES_JAVA_OPTS=-Xms512m -Xmx512m
+{% if {{ item.name }} == "es-hot" %}
+node.name=es-hot
+discovery.seed_hosts=es-warm
+{% elif {{ item.name }} == "es-warm" %}
+node.name=es-warm
+discovery.seed_hosts=es-hot
+{% endif%}

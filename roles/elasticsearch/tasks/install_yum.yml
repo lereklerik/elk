@@ -1,0 +1,15 @@
+---
+- name: Update yum package manager repositories cache
+  become: true
+  yum:
+    update_cache: yes
+- name: install EPEL repo
+  become: true
+  yum:
+    name: epel-release
+    state: present
+- name: install python
+  become: true
+  yum:
+    name: python36
+    state: present
