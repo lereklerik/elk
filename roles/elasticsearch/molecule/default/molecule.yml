@@ -25,6 +25,8 @@ platforms:
       - elastic
     depends_on:
       - es-warm
+    groups:
+      - elk
   - name: es-warm
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
     pre_build_image: true
@@ -39,11 +41,20 @@ platforms:
     #     hard: "65536"
     network:
       - elastic
+    groups:
+      - elk
 provisioner:
   name: ansible
   log: true
   options:
     vvv: true
     diff: true
+  inventory:
+    host_vars:
+      es-hot:
+        elk_id: 0
+      es-warm:
+        elk_id: 1
+
 verifier:
   name: ansible
