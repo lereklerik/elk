@@ -1,32 +1,32 @@
 ---
-- name: Work with elasticsearch-role (warm)
+- name: Start es-warm container
   docker_container:
     name: es-warm
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    state: started
     volumes:
       - data02:/usr/share/elasticsearch/data
-    # ulimits:
-    #   memlock: -1:-1
-    #   nofile: 65536:65536
-    # networks:
-    #   - elastic
+    command: sleep 30s
+    ulimits:
+      - memlock:-1:-1
+      - nofile:262144:262144
 - name: Add es-warm in inventory
   add_host:
     name: es-warm
     ansible_connection: docker
-- name: Work with elasticsearch-role (hot)
+- name: Start es-hot container
   docker_container:
     name: es-hot
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    state: started
     volumes:
       - data01:/usr/share/elasticsearch/data
+    command: sleep 30s
     ulimits:
-      memlock: -1:-1
-      nofile: 65536:65536
+      - memlock:-1:-1
+      - nofile:262144:262144
     ports:
       - 9200:9200
-    networks:
-      - elastic
     links:
       - es-warm
 - name: Add es-hot in inventory
@@ -34,14 +34,14 @@
     name: es-hot
     ansible_connection: docker
 
-- name: Work with kibana-role
+- name: Start kibana container
   docker_container:
     name: kibana
     image: docker.elastic.co/kibana/kibana:7.16.3
+    command: sleep 30s
+    state: started
     ports:
       - 5601:5601
-    networks:
-      - elastic
     links:
       - es-hot
       - es-warm
@@ -50,14 +50,14 @@
     name: kibana
     ansible_connection: docker
 
-- name: Work with logstash-role
+- name: Start logstash container
   docker_container:
     name: logstash
     image: docker.elastic.co/logstash/logstash:7.16.3
+    command: sleep 30s
+    state: started
     ports:
       - 5046:5046
-    networks:
-      - elastic
     links:
       - es-hot
       - es-warm
@@ -65,18 +65,18 @@
   add_host:
     name: logstash
     ansible_connection: docker
-- name: Work with filebeat-role
+- name: Start filebeat container
   docker_container:
     name: filebeat
     image: docker.elastic.co/beats/filebeat:7.16.3
+    state: started
+    command: sleep 30s
     privileged: true
     user: root
     volumes:
       - /var/lib/docker:/var/lib/docker
       - /var/run/docker.sock:/var/run/docker.sock
-    network:
-      - elastic
-    depends_on:
+    links:
       - logstash
 - name: Add filebeat in inventory
   add_host:

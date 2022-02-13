@@ -1,16 +1,35 @@
 ---
-- name: Configure jvm
-  template:
-    src: jvm.options.j2
-    mode: 0755
-    dest: /usr/share/logstash/config/jvm.options
-- name: Configure Logstash
-  template:
-    src: logstash.conf.j2
-    mode: 0755
-    dest: /usr/share/logstash/config/logstash.conf
-- name: Configure with yml Logstash
-  template:
-    src: logstash.yml.j2
-    mode: 0755
-    dest: /usr/share/logstash/config/logstash.yml
+- name: Start logstash container
+  docker_container:
+    name: logstash
+    image: docker.elastic.co/logstash/logstash:7.16.3
+    volumes:
+      - jvm.options.j2:/usr/share/logstash/config/jvm.options
+      - logstash.conf.j2:/usr/share/logstash/config/logstash.conf
+      - logstash.yml.j2:/usr/share/logstash/config/logstash.yml
+    state: started
+    ports:
+      - 5046:5046
+    links:
+      - es-hot
+      - es-warm
+- name: Add logstash in inventory
+  add_host:
+    name: logstash
+    ansible_connection: docker
+
+# - name: Configure jvm
+#   template:
+#     src: jvm.options.j2
+#     mode: 0755
+#     dest: /usr/share/logstash/config/jvm.options
+# - name: Configure Logstash
+#   template:
+#     src: logstash.conf.j2
+#     mode: 0755
+#     dest: /usr/share/logstash/config/logstash.conf
+# - name: Configure with yml Logstash
+#   template:
+#     src: logstash.yml.j2
+#     mode: 0755
+#     dest: /usr/share/logstash/config/logstash.yml
