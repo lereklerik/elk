@@ -1,0 +1,27 @@
+---
+- name: Start containers
+  hosts:
+    - localhost
+  roles:
+    - docker_elk
+- name: Work with elasticsearch-role
+  hosts:
+    - es-hot
+    - es-warm
+  roles:
+    - elasticsearch
+- name: Work with kibana-role
+  hosts:
+    - kibana
+  roles:
+    - kibana
+- name: Work with logstash-role
+  hosts:
+    - logstash
+  roles:
+    - logstash
+- name: Work with filebeat-role
+  hosts:
+    - filebeat
+  roles:
+    - filebeat

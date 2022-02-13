@@ -470,3 +470,13 @@ logging.metrics.enabled: false
 * [Лог](logs/08.md) запуска `molecule converge`
 
 ------------------------------------------------------------------------------------
+
+```shell
+netology@netology:~/Projects/elk$ ansible-galaxy collection install community.docker
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Downloading https://galaxy.ansible.com/download/community-docker-2.1.1.tar.gz to /home/netology/.ansible/tmp/ansible-local-13935p61p6vf2/tmprffesofl/community-docker-2.1.1-7t5x5f7o
+Installing 'community.docker:2.1.1' to '/home/netology/.ansible/collections/ansible_collections/community/docker'
+community.docker:2.1.1 was installed successfully
+```
