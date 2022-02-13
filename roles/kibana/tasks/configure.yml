@@ -1,6 +1,0 @@
----
-- name: Configure Kibana
-  template:
-    src: kibana.yml.j2
-    mode: 0644
-    dest: /usr/share/kibana/config/kibana.yml

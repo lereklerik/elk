@@ -1,0 +1,4 @@
+output {
+  elasticsearch { hosts => ["es-hot:9200"] }
+  stdout { codec => json }
+}

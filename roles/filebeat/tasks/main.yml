@@ -1,6 +1,5 @@
 ---
 - name: Configure Filebeat
-  become: true
   template:
     src: filebeat.yml.j2
     dest: /usr/share/filebeat/filebeat.yml
