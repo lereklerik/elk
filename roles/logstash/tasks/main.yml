@@ -4,9 +4,7 @@
     name: logstash
     image: docker.elastic.co/logstash/logstash:7.16.3
     volumes:
-      - jvm.options.j2:/usr/share/logstash/config/jvm.options
-      - logstash.conf.j2:/usr/share/logstash/config/logstash.conf
-      - logstash.yml.j2:/usr/share/logstash/config/logstash.yml
+      - /home/netology/Projects/elk/roles/logstash/templates/config/:/usr/share/logstash/config/
     state: started
     ports:
       - 5046:5046

@@ -3,32 +3,55 @@
   docker_image:
     name: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
     source: pull
-- name: Copy files for config
-  copy:
-    src: ./templates/warm
-    dest: /t1/
 - name: Start es-warm container
   docker_container:
     name: es-warm
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
     state: started
+    env:
+      cluster.initial_master_nodes: "es-hot,es-warm"
+      bootstrap.memory_lock: "true"
+      cluster.name: "es-docker-cluster"
+      node.name: "es-warm"
+      discovery.seed_hosts: "es-hot"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
     volumes:
-      - /t1:/usr/share/elasticsearch/config/
       - data02:/usr/share/elasticsearch/data
     ulimits:
       - memlock:-1:-1
-      - nofile:262144:262144
-- name: Add es-warm in inventory
-  add_host:
-    name: es-warm
-    ansible_connection: docker
+      - nofile:65536:65536
+# - name: Add vm.max_map_count
+#   community.docker.docker_container_exec:
+#     container: es-warm
+#     command: /bin/bash -c "echo \"vm.max_map_count=262144\" >> /etc/sysctl.conf"
+#     chdir: /root
+#   register: result
+# - name: Add vm.max_map_count
+#   community.docker.docker_container_exec:
+#     container: es-warm
+#     command: /bin/bash -c "sysctl -p"
+#     chdir: /root
+#   register: result
+# - name: Print stdout
+#   debug:
+#     var: result.stdout
+# - name: Add es-warm in inventory
+#   add_host:
+#     name: es-warm
+#     ansible_connection: docker
 - name: Start es-hot container
   docker_container:
     name: es-hot
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
     state: started
+    env:
+      cluster.initial_master_nodes: "es-hot,es-warm"
+      bootstrap.memory_lock: "true"
+      cluster.name: "es-docker-cluster"
+      node.name: "es-hot"
+      discovery.seed_hosts: "es-warm"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
     volumes:
-      - elasticsearch.yml.j2:/usr/share/elasticsearch/config/elasticsearch.yml
       - data01:/usr/share/elasticsearch/data
     ulimits:
       - memlock:-1:-1
@@ -41,11 +64,3 @@
   add_host:
     name: es-hot
     ansible_connection: docker
-# - name: Check for Python
-#   raw: test -e /usr/bin/python
-#   changed_when: false
-#   failed_when: false
-#   register: check_python
-# - name: Install Python
-#   raw: apt -y update && apt install -y python
-#   when: check_python.rc != 0
