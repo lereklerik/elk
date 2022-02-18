@@ -15,19 +15,3 @@
   add_host:
     name: logstash
     ansible_connection: docker
-
-# - name: Configure jvm
-#   template:
-#     src: jvm.options.j2
-#     mode: 0755
-#     dest: /usr/share/logstash/config/jvm.options
-# - name: Configure Logstash
-#   template:
-#     src: logstash.conf.j2
-#     mode: 0755
-#     dest: /usr/share/logstash/config/logstash.conf
-# - name: Configure with yml Logstash
-#   template:
-#     src: logstash.yml.j2
-#     mode: 0755
-#     dest: /usr/share/logstash/config/logstash.yml

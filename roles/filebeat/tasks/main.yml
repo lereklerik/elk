@@ -2,50 +2,16 @@
 - name: Start filebeat container
   docker_container:
     name: filebeat
-    image: docker.elastic.co/beats/filebeat:7.16.3
+    image: docker.elastic.co/beats/filebeat:8.0.0
     state: started
     privileged: true
     user: root
-    command: >
-      bash -c '
-        cd /usr/share/filebeat
-        touch filebeat.yml.tmp
-        echo "
-        filebeat.inputs:
-          - type: container
-            paths:
-              - '/var/lib/docker/containers/*/*.log'
-
-        processors:
-          - add_docker_metadata:
-              host: \"unix:///var/run/docker.sock\"
-
-          - decode_json_fields:
-              fields: [\"message\"]
-              target: \"json\"
-              overwrite_keys: true
-
-        output.logstash:
-          hosts: [\"logstash:5046\"]
-
-        #output.console:
-        #  enabled: true
-
-        logging.json: true
-        logging.metrics.enabled: false
-        " >> filebeat.yml.tmp
-        mv filebeat.yml filebeat.old
-        mv filebeat.yml.tmp filebeat.yml
-      '
     volumes:
-      - /var/lib/docker:/var/lib/docker
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/netology/Projects/elk/roles/filebeat/templates/filebeat.yml:/usr/share/filebeat.yml:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     links:
       - logstash
-- name: Add filebeat in inventory
-  add_host:
-    name: filebeat
-    ansible_connection: docker
 
 # - name: Configure Filebeat
 #   template:

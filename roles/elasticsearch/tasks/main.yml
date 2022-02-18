@@ -1,3 +1,47 @@
 ---
-- include_tasks: "install.yml"
-# - import_tasks: configure.yml
+- name: Pull elastic image
+  docker_image:
+    name: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    source: pull
+- name: Start es-warm container
+  docker_container:
+    name: es-warm
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    state: started
+    env:
+      cluster.initial_master_nodes: "es-hot,es-warm"
+      bootstrap.memory_lock: "true"
+      cluster.name: "es-docker-cluster"
+      node.name: "es-warm"
+      discovery.seed_hosts: "es-hot"
+      ES_JAVA_OPTS: "-Xms4g -Xmx4g"
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+    ulimits:
+      - memlock:-1:-1
+      - nofile:65536:65536
+- name: Start es-hot container
+  docker_container:
+    name: es-hot
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    state: started
+    env:
+      cluster.initial_master_nodes: "es-hot,es-warm"
+      bootstrap.memory_lock: "true"
+      cluster.name: "es-docker-cluster"
+      node.name: "es-hot"
+      discovery.seed_hosts: "es-warm"
+      ES_JAVA_OPTS: "-Xms4g -Xmx4g"
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ulimits:
+      - memlock:-1:-1
+      - nofile:262144:262144
+    ports:
+      - 9200:9200
+    links:
+      - es-warm
+- name: Add es-hot in inventory
+  add_host:
+    name: es-hot
+    ansible_connection: docker
