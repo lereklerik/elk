@@ -1,9 +1,4 @@
 ---
-# - name: Start containers
-#   hosts:
-#     - localhost
-#   roles:
-#     - docker_elk
 - name: Work with elasticsearch-role
   gather_facts: false
   hosts:
