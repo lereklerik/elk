@@ -1,17 +1,24 @@
 filebeat.inputs:
   - type: container
+    enabled: true
     paths:
       - '/var/lib/docker/containers/*/*.log'
-
+    json.keys_under_root: true
+#    document_type: docker
+  
 processors:
   - add_docker_metadata:
       host: "unix:///var/run/docker.sock"
-
   - decode_json_fields:
       fields: ["message"]
-      target: "json"
+      target: ""
       overwrite_keys: true
+  - add_docker_metadata: ~
 
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+  
 output.logstash:
   hosts: ["logstash:5046"]
 

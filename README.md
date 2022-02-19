@@ -54,9 +54,9 @@ vm.max_map_count = 262144
 ```
 * Многие задачи с поднятием контейнера либо не содержат `volume's` с файлами конфигурации, либо содержат тома только с указанием директории
 * В каждой роли в `templates`-директории можно увидеть, что файлы с конфигурациями были подготовлены. Однако первые попытки запуска контейнера с передачей в томе конкретного файла падали с ошибкой, что `volume` - не директория. 
-* Поэтому в `elasticsearch`, `kibana` - используются глобальные переменные, в `logstash` - целая директория с файлами, которые сначала были изучены в ручном запуске контейнера и скопированы на свой хост.
+* Поэтому в `elasticsearch`, `kibana` - используются глобальные переменные, в `logstash` изначально использовалась директория с файлами, которые предварительно были изучены в ручном запуске контейнера и скопированы на свой хост.
 * Истина с работой с `volume` и конкретным файлом открылась мне с `filebeat`: рабочая директория в контейнере, по умолчанию, `/usr/share/filebeat`, где нет отдельных директорий `config`, как в других ролях. Все файлы с настройками и исполняемый лежат в рабочей директории. Передача директории в томе с исполняемым файлом не имела смысла, поэтому пришлось повозиться. А дело оказалось в добавлении `:ro` к `volume` запускаемого контейнера. 
-* Но так как было много потрачено времени на успешный запуск всех ролей до этого, изменять такие детали в раннее подготовленных ролях я не стала. 
+* В связи с этим, запуск контейнера с `logstash` был скорректирован 
 
 ------------------------------------------------------------------------
 ### Elasticsearch
@@ -175,7 +175,8 @@ vm.max_map_count = 262144
     name: logstash
     image: docker.elastic.co/logstash/logstash:7.16.3
     volumes:
-      - /home/netology/Projects/elk/roles/logstash/templates/config/:/usr/share/logstash/config/
+      - /home/netology/Projects/elk/roles/logstash/templates/logstash.conf.j2:/etc/logstash/conf.d/logstash.conf:ro
+      - /home/netology/Projects/elk/roles/logstash/templates/logstash.yml.j2:/opt/logstash/config/logstash.yml:ro
     state: started
     ports:
       - 5046:5046
@@ -430,3 +431,44 @@ netology
 * `kibana`:
 
 ![03](logs/pictures/03.png)
+
+-----------------------------------------------------------------------------------------
+
+* Создание индексов с CLI:
+
+```shell
+netology@netology:~/Projects/ci_cd$ curl -XPUT localhost:9200/ind-1 -H 'Content-Type: application/json' -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 0}}'
+{"acknowledged":true,"shards_acknowledged":true,"index":"ind-1"} 
+netology@netology:~/Projects/ci_cd$ curl -XPUT localhost:9200/ind-2 -H 'Content-Type: application/json' -d '{"settings": {"number_of_shards": 2, "number_of_replicas": 1}}'
+{"acknowledged":true,"shards_acknowledged":true,"index":"ind-2"} 
+netology@netology:~/Projects/ci_cd$ curl -XPUT localhost:9200/ind-3 -H 'Content-Type: application/json' -d '{"settings": {"number_of_shards": 4, "number_of_replicas": 2}}'
+{"acknowledged":true,"shards_acknowledged":true,"index":"ind-3"}
+netology@netology:~/Projects/ci_cd$ curl -XGET localhost:9200/_cat/indices/ind*?v
+health status index uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   ind-1 XpgwYt_XSXmstZpHXb81Dw   1   0          0            0       226b           226b
+yellow open   ind-3 Ld-oRboVTw2uOnm43xkdCA   4   2          0            0      1.7kb           904b
+green  open   ind-2 PcpF51jNTIuHUEgC2h7VwQ   2   1          0            0       904b           452b
+```
+
+* Состояние кластера:
+
+```shell
+netology@netology:~/Projects/ci_cd$ curl -XGET localhost:9200/_cluster/health/ind*?pretty
+{
+  "cluster_name" : "es-docker-cluster",
+  "status" : "yellow",
+  "timed_out" : false,
+  "number_of_nodes" : 2,
+  "number_of_data_nodes" : 2,
+  "active_primary_shards" : 7,
+  "active_shards" : 13,
+  "relocating_shards" : 0,
+  "initializing_shards" : 0,
+  "unassigned_shards" : 4,
+  "delayed_unassigned_shards" : 0,
+  "number_of_pending_tasks" : 0,
+  "number_of_in_flight_fetch" : 0,
+  "task_max_waiting_in_queue_millis" : 0,
+  "active_shards_percent_as_number" : 89.74358974358975
+}
+```
