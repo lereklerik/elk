@@ -23,3 +23,9 @@
     - localhost
   roles:
     - filebeat
+- name: Work with application
+  gather_facts: false
+  hosts:
+    - localhost
+  roles:
+    - application

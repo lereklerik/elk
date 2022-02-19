@@ -1,4 +1,9 @@
 ---
+- name: Create network
+  docker_network:
+    name: elastic
+    appends: yes
+    state: present
 - name: Pull elastic image
   docker_image:
     name: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
@@ -20,6 +25,12 @@
     ulimits:
       - memlock:-1:-1
       - nofile:65536:65536
+    networks:
+      - name: elastic
+- name: Add es-warm in inventory
+  add_host:
+    name: es-warm
+    ansible_connection: docker
 - name: Start es-hot container
   docker_container:
     name: es-hot
@@ -39,8 +50,10 @@
       - nofile:262144:262144
     ports:
       - 9200:9200
-    links:
-      - es-warm
+    networks:
+      - name: elastic
+        links:
+          - es-warm
 - name: Add es-hot in inventory
   add_host:
     name: es-hot

@@ -1,4 +1,8 @@
 ---
+- name: Pull logstash image
+  docker_image:
+    name: docker.elastic.co/logstash/logstash:7.16.3
+    source: pull
 - name: Start logstash container
   docker_container:
     name: logstash
@@ -8,9 +12,11 @@
     state: started
     ports:
       - 5046:5046
-    links:
-      - es-hot
-      - es-warm
+    networks:
+      - name: elastic
+        links:
+          - es-hot
+          - es-warm
 - name: Add logstash in inventory
   add_host:
     name: logstash

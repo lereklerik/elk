@@ -1,4 +1,8 @@
 ---
+- name: Pull logstash image
+  docker_image:
+    name: docker.elastic.co/beats/filebeat:8.0.0
+    source: pull
 - name: Start filebeat container
   docker_container:
     name: filebeat
@@ -10,5 +14,7 @@
       - /home/netology/Projects/elk/roles/filebeat/templates/filebeat.yml:/usr/share/filebeat.yml:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    links:
-      - logstash
+    networks:
+      - name: elastic
+        links:
+          - logstash
