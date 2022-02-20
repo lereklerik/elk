@@ -20,25 +20,6 @@
     ulimits:
       - memlock:-1:-1
       - nofile:65536:65536
-# - name: Add vm.max_map_count
-#   community.docker.docker_container_exec:
-#     container: es-warm
-#     command: /bin/bash -c "echo \"vm.max_map_count=262144\" >> /etc/sysctl.conf"
-#     chdir: /root
-#   register: result
-# - name: Add vm.max_map_count
-#   community.docker.docker_container_exec:
-#     container: es-warm
-#     command: /bin/bash -c "sysctl -p"
-#     chdir: /root
-#   register: result
-# - name: Print stdout
-#   debug:
-#     var: result.stdout
-# - name: Add es-warm in inventory
-#   add_host:
-#     name: es-warm
-#     ansible_connection: docker
 - name: Start es-hot container
   docker_container:
     name: es-hot

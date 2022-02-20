@@ -1,18 +1,18 @@
 ---
 - name: Pull logstash image
   docker_image:
-    name: docker.elastic.co/logstash/logstash:7.16.3
+    name: docker.elastic.co/logstash/logstash:{{ stack_version }}
     source: pull
 - name: Start logstash container
   docker_container:
     name: logstash
-    image: docker.elastic.co/logstash/logstash:7.16.3
+    image: docker.elastic.co/logstash/logstash:{{ stack_version }}
     volumes:
       - /home/netology/Projects/elk/roles/logstash/templates/logstash.conf.j2:/etc/logstash/conf.d/logstash.conf:ro
       - /home/netology/Projects/elk/roles/logstash/templates/logstash.yml.j2:/opt/logstash/config/logstash.yml:ro
     state: started
     ports:
-      - 5046:5046
+      - 5044:5044
     networks:
       - name: elastic
         links:

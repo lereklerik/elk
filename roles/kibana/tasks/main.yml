@@ -1,16 +1,24 @@
 ---
 - name: Pull kibana image
   docker_image:
-    name: docker.elastic.co/kibana/kibana:7.16.3
+    name: docker.elastic.co/kibana/kibana:{{ stack_version }}
     source: pull
 - name: Start kibana container
   docker_container:
     name: kibana
-    image: docker.elastic.co/kibana/kibana:7.16.3
+    image: docker.elastic.co/kibana/kibana:{{ stack_version }}
     state: started
+    volumes:
+      - certs:/usr/share/kibana/config/certs
+      - kibanadata:/usr/share/kibana/data
+      - /home/netology/Projects/elk/roles/kibana/templates/kibana.yml:/usr/share/kibana/config/certs/kibana.yml:ro
+    env_file: /home/netology/Projects/elk/.env    
     env:
-      ELASTICSEARCH_URL: "http://es-hot:9200"
-      ELASTICSEARCH_HOSTS: '["http://es-hot:9200","http://es-warm:9200"]'
+      ELASTICSEARCH_URL: "https://es-hot:9200"
+      ELASTICSEARCH_HOSTS: "https://es-hot:9200"
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: "config/certs/ca/ca.crt"
     ports:
       - 5601:5601
     networks:
@@ -18,6 +26,15 @@
         links:
           - es-hot
           - es-warm
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
 - name: Add kibana in inventory
   add_host:
     name: kibana

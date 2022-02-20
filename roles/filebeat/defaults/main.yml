@@ -1,2 +1,2 @@
 ---
-# defaults file for filebeat
+stack_version: 8.0.0

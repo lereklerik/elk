@@ -4,46 +4,100 @@
     name: elastic
     appends: yes
     state: present
+    # driver_options:
+    #   com.docker.network.bridge.enable_icc: "true"
 - name: Pull elastic image
   docker_image:
-    name: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    name: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
     source: pull
-- name: Start es-warm container
+- name: Cert container
   docker_container:
-    name: es-warm
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
-    state: started
-    env:
-      cluster.initial_master_nodes: "es-hot,es-warm"
-      bootstrap.memory_lock: "true"
-      cluster.name: "es-docker-cluster"
-      node.name: "es-warm"
-      discovery.seed_hosts: "es-hot"
-      ES_JAVA_OPTS: "-Xms4g -Xmx4g"
+    image: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
+    name: cert
     volumes:
-      - data02:/usr/share/elasticsearch/data
-    ulimits:
-      - memlock:-1:-1
-      - nofile:65536:65536
-    networks:
-      - name: elastic
-- name: Add es-warm in inventory
-  add_host:
-    name: es-warm
-    ansible_connection: docker
+      - certs:/usr/share/elasticsearch/config/certs
+    state: started
+    user: "0"
+    env_file: /home/netology/Projects/elk/.env
+    command: >
+      bash -c '
+        if [ x${ELASTIC_PASSWORD} == x ]; then
+          echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
+          exit 1;
+        elif [ x${KIBANA_PASSWORD} == x ]; then
+          echo "Set the KIBANA_PASSWORD environment variable in the .env file";
+          exit 1;
+        fi;
+        if [ ! -f certs/ca.zip ]; then
+          echo "Creating CA";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f certs/certs.zip ]; then
+          echo "Creating certs";
+          echo -ne \
+          "instances:\n"\
+          "  - name: es-hot\n"\
+          "    dns:\n"\
+          "      - es-hot\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          "  - name: es-warm\n"\
+          "    dns:\n"\
+          "      - es-warm\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          unzip config/certs/certs.zip -d config/certs;
+        fi;
+        echo "Setting file permissions"
+        chown -R root:root config/certs;
+        find . -type d -exec chmod 750 \{\} \;;
+        find . -type f -exec chmod 640 \{\} \;;
+        echo "Waiting for Elasticsearch availability";
+        until curl -s --cacert config/certs/ca/ca.crt https://es-hot:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        echo "Setting kibana_system password";
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u elastic:${ELASTIC_PASSWORD} -H "Content-Type: application/json" https://es-hot:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/es-hot/es-hot.crt ]"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
 - name: Start es-hot container
   docker_container:
     name: es-hot
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
     state: started
+    env_file: /home/netology/Projects/elk/.env    
     env:
-      cluster.initial_master_nodes: "es-hot,es-warm"
-      bootstrap.memory_lock: "true"
-      cluster.name: "es-docker-cluster"
       node.name: "es-hot"
+      cluster.name: ${CLUSTER_NAME}
+      cluster.initial_master_nodes: "es-hot,es-warm"
       discovery.seed_hosts: "es-warm"
-      ES_JAVA_OPTS: "-Xms4g -Xmx4g"
+      ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: "certs/es-hot/es-hot.key"
+      xpack.security.http.ssl.certificate: "certs/es-hot/es-hot.crt"
+      xpack.security.http.ssl.certificate_authorities: "certs/ca/ca.crt"
+      xpack.security.http.ssl.verification_mode: "certificate"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.key: "certs/es-hot/es-hot.key"
+      xpack.security.transport.ssl.certificate: "certs/es-hot/es-hot.crt"
+      xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
+      xpack.security.transport.ssl.verification_mode: "certificate"
+      xpack.license.self_generated.type: ${LICENSE}
     volumes:
+      - certs:/usr/share/elasticsearch/config/certs
       - data01:/usr/share/elasticsearch/data
     ulimits:
       - memlock:-1:-1
@@ -53,7 +107,66 @@
     networks:
       - name: elastic
         links:
-          - es-warm
+          - es-warm    
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+- name: Start es-warm container
+  docker_container:
+    name: es-warm
+    image: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
+    state: started
+    env_file: /home/netology/Projects/elk/.env    
+    env:
+      node.name: "es-warm"
+      cluster.name: ${CLUSTER_NAME}
+      cluster.initial_master_nodes: "es-hot,es-warm"
+      discovery.seed_hosts: "es-hot"
+      ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: "certs/es-warm/es-warm.key"
+      xpack.security.http.ssl.certificate: "certs/es-warm/es-warm.crt"
+      xpack.security.http.ssl.certificate_authorities: "certs/ca/ca.crt"
+      xpack.security.http.ssl.verification_mode: "certificate"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.key: "certs/es-warm/es-warm.key"
+      xpack.security.transport.ssl.certificate: "certs/es-warm/es-warm.crt"
+      xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
+      xpack.security.transport.ssl.verification_mode: "certificate"
+      xpack.license.self_generated.type: ${LICENSE}
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+      - data02:/usr/share/elasticsearch/data
+    ulimits:
+      - memlock:-1:-1
+      - nofile:65536:65536
+    networks:
+      - name: elastic
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+- name: Add es-warm in inventory
+  add_host:
+    name: es-warm
+    ansible_connection: docker
 - name: Add es-hot in inventory
   add_host:
     name: es-hot
