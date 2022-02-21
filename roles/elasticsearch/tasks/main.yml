@@ -68,6 +68,8 @@
       interval: 1s
       timeout: 5s
       retries: 120
+    networks:
+      - name: elastic
 - name: Start es-hot container
   docker_container:
     name: es-hot
@@ -76,13 +78,11 @@
     env_file: /home/netology/Projects/elk/.env    
     env:
       node.name: "es-hot"
+      discovery.seed_hosts: "es-warm"
       cluster.name: ${CLUSTER_NAME}
       cluster.initial_master_nodes: "es-hot,es-warm"
-      discovery.seed_hosts: "es-warm"
       ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-      ELASTICSEARCH_USERNAME: "kibana_system"
-      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "true"
@@ -95,19 +95,18 @@
       xpack.security.transport.ssl.certificate: "certs/es-hot/es-hot.crt"
       xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
       xpack.security.transport.ssl.verification_mode: "certificate"
-      xpack.license.self_generated.type: ${LICENSE}
+      xpack.license.self_generated.type: ${LICENSE} 
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - data01:/usr/share/elasticsearch/data
     ulimits:
       - memlock:-1:-1
-      - nofile:262144:262144
     ports:
       - 9200:9200
     networks:
       - name: elastic
         links:
-          - es-warm    
+          - cert    
     healthcheck:
       test:
         [
@@ -126,13 +125,11 @@
     env_file: /home/netology/Projects/elk/.env    
     env:
       node.name: "es-warm"
+      discovery.seed_hosts: "es-hot"
       cluster.name: ${CLUSTER_NAME}
       cluster.initial_master_nodes: "es-hot,es-warm"
-      discovery.seed_hosts: "es-hot"
       ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-      ELASTICSEARCH_USERNAME: "kibana_system"
-      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "true"
@@ -145,15 +142,16 @@
       xpack.security.transport.ssl.certificate: "certs/es-warm/es-warm.crt"
       xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
       xpack.security.transport.ssl.verification_mode: "certificate"
-      xpack.license.self_generated.type: ${LICENSE}
+      xpack.license.self_generated.type: ${LICENSE}   
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - data02:/usr/share/elasticsearch/data
     ulimits:
       - memlock:-1:-1
-      - nofile:65536:65536
     networks:
       - name: elastic
+        links:
+          - es-hot
     healthcheck:
       test:
         [

@@ -5,27 +5,27 @@
     - localhost
   roles:
     - elasticsearch
-- name: Work with kibana-role
-  gather_facts: false
-  hosts:
-    - localhost
-  roles:
-    - kibana
-- name: Work with logstash-role
-  gather_facts: false
-  hosts:
-    - localhost
-  roles:
-    - logstash
-- name: Work with filebeat-role
-  gather_facts: false
-  hosts:
-    - localhost
-  roles:
-    - filebeat
-- name: Work with application
-  gather_facts: false
-  hosts:
-    - localhost
-  roles:
-    - application
+# - name: Work with kibana-role
+#   gather_facts: false
+#   hosts:
+#     - localhost
+#   roles:
+#     - kibana
+# - name: Work with logstash-role
+#   gather_facts: false
+#   hosts:
+#     - localhost
+#   roles:
+#     - logstash
+# - name: Work with filebeat-role
+#   gather_facts: false
+#   hosts:
+#     - localhost
+#   roles:
+#     - filebeat
+# - name: Work with application
+#   gather_facts: false
+#   hosts:
+#     - localhost
+#   roles:
+#     - application
