@@ -19,7 +19,6 @@
       - name: elastic
         links:
           - logstash
-          - kibana
 - name: Add filebeat in inventory
   add_host:
     name: filebeat

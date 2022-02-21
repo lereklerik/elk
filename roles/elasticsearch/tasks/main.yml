@@ -18,7 +18,7 @@
       - certs:/usr/share/elasticsearch/config/certs
     state: started
     user: "0"
-    env_file: /home/netology/Projects/elk/.env
+    env_file: /home/netology/Projects/elk/es.env
     command: >
       bash -c '
         if [ x${ELASTIC_PASSWORD} == x ]; then
@@ -75,14 +75,13 @@
     name: es-hot
     image: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
     state: started
-    env_file: /home/netology/Projects/elk/.env    
+    env_file: /home/netology/Projects/elk/es.env   
     env:
       node.name: "es-hot"
       discovery.seed_hosts: "es-warm"
       cluster.name: ${CLUSTER_NAME}
       cluster.initial_master_nodes: "es-hot,es-warm"
       ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "true"
@@ -95,7 +94,8 @@
       xpack.security.transport.ssl.certificate: "certs/es-hot/es-hot.crt"
       xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
       xpack.security.transport.ssl.verification_mode: "certificate"
-      xpack.license.self_generated.type: ${LICENSE} 
+      xpack.license.self_generated.type: ${LICENSE}
+      xpack.monitoring.collection.enabled: "true"
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - data01:/usr/share/elasticsearch/data
@@ -122,14 +122,13 @@
     name: es-warm
     image: docker.elastic.co/elasticsearch/elasticsearch:{{ stack_version }}
     state: started
-    env_file: /home/netology/Projects/elk/.env    
+    env_file: /home/netology/Projects/elk/es.env    
     env:
       node.name: "es-warm"
       discovery.seed_hosts: "es-hot"
       cluster.name: ${CLUSTER_NAME}
       cluster.initial_master_nodes: "es-hot,es-warm"
       ES_JAVA_OPTS: "-Xms4g -Xmx4g"      
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "true"
@@ -143,6 +142,7 @@
       xpack.security.transport.ssl.certificate_authorities: "certs/ca/ca.crt"
       xpack.security.transport.ssl.verification_mode: "certificate"
       xpack.license.self_generated.type: ${LICENSE}   
+      xpack.monitoring.collection.enabled: "true"
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - data02:/usr/share/elasticsearch/data

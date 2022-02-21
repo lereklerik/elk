@@ -10,6 +10,7 @@
     volumes:
       - /home/netology/Projects/elk/roles/logstash/templates/logstash.conf.j2:/etc/logstash/conf.d/logstash.conf:ro
       - /home/netology/Projects/elk/roles/logstash/templates/logstash.yml.j2:/opt/logstash/config/logstash.yml:ro
+      - /home/netology/Projects/elk/roles/logstash/templates/logstash.yml.j2:/usr/share/logstash/config/logstash.yml:ro
     state: started
     ports:
       - 5044:5044
