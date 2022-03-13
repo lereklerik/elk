@@ -1,27 +1,31 @@
 ---
-- name: Start containers
+- name: Work with elasticsearch-role
+  gather_facts: false
   hosts:
     - localhost
   roles:
-    - docker_elk
-- name: Work with elasticsearch-role
-  hosts:
-    - es-hot
-    - es-warm
-  roles:
     - elasticsearch
 - name: Work with kibana-role
+  gather_facts: false
   hosts:
-    - kibana
+    - localhost
   roles:
     - kibana
 - name: Work with logstash-role
+  gather_facts: false
   hosts:
-    - logstash
+    - localhost
   roles:
     - logstash
 - name: Work with filebeat-role
+  gather_facts: false
   hosts:
-    - filebeat
+    - localhost
   roles:
     - filebeat
+# - name: Work with application
+#   gather_facts: false
+#   hosts:
+#     - localhost
+#   roles:
+#     - application

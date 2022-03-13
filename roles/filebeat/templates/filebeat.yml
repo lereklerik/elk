@@ -1,0 +1,43 @@
+filebeat.inputs:
+        - type: container
+          enabled: true
+          paths: 
+            - '/var/lib/docker/containers/eaf421f5ef328460238b282ae05023960862b4ac1d99243d5a470637ab26cb56/*.log'
+              #    json.keys_under_root: true
+
+processors:
+        - add_docker_metadata:
+                host: "unix:///var/run/docker.sock"
+        - decode_json_fields:
+                fields: ["message"]
+                target: "json"
+                overwrite_keys: true
+                #  - add_docker_metadata: ~
+
+                #filebeat.config.modules:
+                #        path: ${path.config}/modules.d/*.yml
+                #        reload.enabled: false
+                #
+                #kibana.setup:
+                #        host: "kibana:5601"
+        
+output.logstash:
+        hosts: ["logstash:5044"]
+        #        indices:
+                #           - index: "logstash-%{+yyyy.MM.dd}"
+             #output.elasticsearch:
+             #  hosts: ["es-hot:9200"]
+             #  indices:
+             #- index: "filebeat-elastic-%{[agent.version]}-%{+yyyy.MM.dd}"
+             # when.or:
+             #   - equals:
+             #       container.image.name: docker.elastic.co/beats/filebeat:7.16.3
+             #   - equals:
+             #       container.image.name: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+             #   - equals:
+             #       container.image.name: docker.elastic.co/kibana/kibana:7.16.3
+             #- index: "filebeat-apps-%{[agent.version]}-%{+yyyy.MM.dd}"
+             
+logging.json: true
+logging.metrics.enabled: false
+

@@ -1,0 +1,17 @@
+---
+- name: Pull python:3.9-alpine image
+  docker_image:
+    name: library/python:3.9-alpine
+    source: pull
+- name: Start application container
+  docker_container:
+    name: some_app
+    image: library/python:3.9-alpine
+    state: started
+    volumes:
+      - /home/netology/Projects/elk/roles/application/templates/run.py:/opt/run.py:ro
+    entrypoint: python3 /opt/run.py
+- name: Add application in inventory
+  add_host:
+    name: application
+    ansible_connection: docker

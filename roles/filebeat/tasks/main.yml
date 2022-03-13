@@ -1,6 +1,55 @@
 ---
-- name: Configure Filebeat
-  template:
-    src: filebeat.yml.j2
-    dest: /usr/share/filebeat/filebeat.yml
-    mode: 0644
+- name: Pull filebeat image
+  docker_image:
+    name: docker.elastic.co/beats/filebeat:{{ stack_version }}
+    source: pull
+- name: Start filebeat container
+  docker_container:
+    name: filebeat
+    image: docker.elastic.co/beats/filebeat:{{ stack_version }}
+    state: started
+    privileged: true
+    command: "filebeat -e -strict.perms=false"
+    user: root
+    volumes:
+      - /home/netology/Projects/elk/roles/filebeat/templates/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - /var/lib/docker:/var/lib/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - name: elastic
+        links:
+          - logstash
+- name: Add filebeat in inventory
+  add_host:
+    name: filebeat
+    ansible_connection: docker
+
+# - name: Add config file
+#   command: "docker cp /home/netology/Projects/elk/roles/filebeat/templates/filebeat.yml filebeat:/usr/share/filebeat/filebeat.yml"
+# # - name: Add module's file
+# #   command: "docker cp /home/netology/Projects/elk/roles/filebeat/templates/logstash.yml filebeat:/usr/share/filebeat/modules.d/logstash.yml"
+# # - name: Add modules
+# #   command: "docker exec --user root:root --privileged --interactive filebeat filebeat modules enable logstash"
+# - name: Setup
+#   command: "docker exec --user root:root --privileged --interactive filebeat filebeat -e"
+# # - name: New image
+#   command: "docker commit -m \"Changed config\" -a \"Valeriya Tulyakova\" filebeat_tmp filebeat:my"
+# - name: New tag
+#   command: "docker tag filebeat:my elk/filebeat:my"
+# - name: Stop tmp-container
+#   command: "docker stop filebeat_tmp"
+# - name: Start filebeat container
+#   docker_container:
+#     name: filebeat
+#     image: elk/filebeat:my
+#     state: started
+#     command: "--strict.perms=false"
+#     privileged: true
+#     user: root
+#     volumes:
+#       - /var/lib/docker:/var/lib/docker:ro
+#       - /var/run/docker.sock:/var/run/docker.sock:ro
+#     networks:
+#       - name: elastic
+#         links:
+          # - logstash

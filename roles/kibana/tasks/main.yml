@@ -1,6 +1,48 @@
 ---
-- name: Configure Kibana
-  template:
-    src: kibana.yml.j2
-    mode: 0644
-    dest: /usr/share/kibana/config/kibana.yml
+- name: Pull kibana image
+  docker_image:
+    name: docker.elastic.co/kibana/kibana:{{ stack_version }}
+    source: pull
+- name: Docker Get ip
+  shell: "docker inspect --format {% raw %}'{{ .NetworkSettings.IPAddress }}' {% endraw %} es-hot"
+  register: es_ip
+  until: es_ip is success
+- name: Print information about container
+  debug:
+    var: es_ip
+- name: Start kibana container
+  docker_container:
+    name: kibana
+    image: docker.elastic.co/kibana/kibana:{{ stack_version }}
+    state: started
+    volumes:
+      - certs:/usr/share/kibana/config/certs
+      - kibanadata:/usr/share/kibana/data
+      - /home/netology/Projects/elk/roles/kibana/templates/kibana.yml:/usr/share/kibana/config/certs/kibana.yml:ro
+    env_file: /home/netology/Projects/elk/kib.env    
+    env:
+      ELASTICSEARCH_URL: "https://es-hot:9200"
+      ELASTICSEARCH_HOSTS: "https://es-hot:9200"
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: "config/certs/ca/ca.crt"
+    ports:
+      - 5601:5601
+    networks:
+      - name: elastic
+        links:
+          - es-hot
+          - es-warm
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+- name: Add kibana in inventory
+  add_host:
+    name: kibana
+    ansible_connection: docker

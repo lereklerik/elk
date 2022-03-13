@@ -1,0 +1,17 @@
+node.name: es-warm
+cluster.name: docker-cluster
+cluster.initial_master_nodes: es-hot,es-warm
+discovery.seed_hosts: es-hot
+bootstrap.memory_lock: true
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.key: certs/es-warm/es-warm.key
+xpack.security.http.ssl.certificate: certs/es-warm/es-warm.crt
+xpack.security.http.ssl.certificate_authorities: certs/ca/ca.crt
+xpack.security.http.ssl.verification_mode: certificate
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.key: certs/es-warm/es-warm.key
+xpack.security.transport.ssl.certificate: certs/es-warm/es-warm.crt
+xpack.security.transport.ssl.certificate_authorities: certs/ca/ca.crt
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.license.self_generated.type: trial
